@@ -1,0 +1,200 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>学習発表会 練習用プレイヤー</title>
+  <style>
+    :root {
+      --primary: #3182CE;
+      --primary-light: #EBF8FF;
+      --bg: #F7FAFC;
+      --card-bg: #FFFFFF;
+      --text: #2D3748;
+      --sub-text: #718096;
+      --border: #E2E8F0;
+    }
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); margin: 0; padding: 16px; display: flex; flex-direction: column; align-items: center; }
+    .container { width: 100%; max-width: 500px; }
+    
+    header { text-align: center; background: linear-gradient(135deg, #4299E1, #3182CE); color: white; padding: 20px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    h1 { font-size: 1.4rem; margin: 0 0 6px 0; }
+    .subtitle { font-size: 0.85rem; opacity: 0.9; margin: 0; }
+
+    .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .back-btn { background: #EDF2F7; border: none; border-radius: 20px; padding: 8px 16px; font-size: 0.85rem; font-weight: bold; color: var(--text); cursor: pointer; }
+    
+    .section-title { font-size: 1rem; font-weight: bold; margin: 12px 0 8px 0; color: var(--sub-text); }
+    .btn-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 16px; }
+    .btn-grid.single-column { grid-template-columns: 1fr; }
+    
+    .menu-card { background: var(--card-bg); border: 2px solid var(--border); border-radius: 12px; padding: 14px 10px; text-align: center; cursor: pointer; transition: all 0.2s; }
+    .menu-card.active { border-color: var(--primary); background-color: var(--primary-light); }
+    .card-icon { font-size: 1.6rem; margin-bottom: 4px; }
+    .card-title { font-size: 0.95rem; font-weight: bold; color: var(--text); }
+
+    .player-card { background: var(--card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid var(--border); text-align: center; margin-top: 12px; }
+    .part-title { font-size: 1.2rem; font-weight: bold; color: var(--primary); margin: 0 0 16px 0; }
+
+    audio { width: 100%; margin-bottom: 16px; }
+
+    .speed-control { display: flex; flex-direction: column; align-items: center; gap: 8px; background: #F7FAFC; padding: 12px; border-radius: 12px; }
+    .speed-label { font-size: 0.85rem; font-weight: bold; color: var(--sub-text); }
+    .speed-btns { display: flex; gap: 6px; width: 100%; justify-content: center; }
+    .speed-btn { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-size: 0.85rem; font-weight: bold; cursor: pointer; flex: 1; max-width: 70px; }
+    .speed-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>学習発表会 練習用音源</h1>
+      <p class="subtitle">おうちでの練習に使ってね</p>
+    </header>
+
+    <!-- STEP 1: 曲選択 -->
+    <div id="step-category">
+      <div class="section-title">1. きょくをえらぼう</div>
+      <div class="btn-grid single-column">
+        <div class="menu-card" onclick="selectCategory('gassho')">
+          <div class="card-icon">🎤</div>
+          <div class="card-title">全校合唱「大切なもの」</div>
+        </div>
+        <div class="menu-card" onclick="selectCategory('gassou')">
+          <div class="card-icon">🎺</div>
+          <div class="card-title">器楽合奏「Five / 嵐」</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: パート選択 -->
+    <div id="step-part" class="hidden">
+      <div class="top-nav">
+        <button class="back-btn" onclick="goBackToCategory()">◀ きょくをえらびなおす</button>
+      </div>
+      <div class="section-title" id="part-section-title">2. たんとうパートをえらぼう</div>
+      <div class="btn-grid" id="part-grid"></div>
+    </div>
+
+    <!-- STEP 3: プレイヤー -->
+    <div id="step-player" class="player-card hidden">
+      <h2 class="part-title" id="player-part-title">パート名</h2>
+      
+      <audio id="audio-player" controls preload="metadata"></audio>
+
+      <div class="speed-control">
+        <span class="speed-label">さいせいスピード</span>
+        <div class="speed-btns">
+          <button class="speed-btn" onclick="setSpeed(0.75, this)">0.75倍</button>
+          <button class="speed-btn active" onclick="setSpeed(1.0, this)">1.0倍</button>
+          <button class="speed-btn" onclick="setSpeed(1.25, this)">1.25倍</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const songData = {
+      gassho: {
+        title: '全校合唱「大切なもの」',
+        parts: [
+          { name: '範唱（ピアノ伴奏）', file: '01.mp3' },
+          { name: 'ピアノ伴奏', file: '02.mp3' },
+          { name: '上声部パート', file: '03.mp3' },
+          { name: '下声部パート', file: '04.mp3' }
+        ]
+      },
+      gassou: {
+        title: '器楽合奏「Five / 嵐」',
+        parts: [
+          { name: '全体合奏', file: '05.mp3' },
+          { name: 'リコーダー１', file: '06.mp3' },
+          { name: 'リコーダー２', file: '07.mp3' },
+          { name: 'キーボード１', file: '08.mp3' },
+          { name: 'キーボード２', file: '09.mp3' },
+          { name: 'オルガン', file: '10.mp3' },
+          { name: 'ピアノ', file: '11.mp3' },
+          { name: 'シロフォン', file: '12.mp3' },
+          { name: 'ヴィブラフォン', file: '13.mp3' },
+          { name: 'スネアドラム', file: '14.mp3' },
+          { name: 'バスドラム', file: '15.mp3' },
+          { name: 'ハイハット', file: '16.mp3' },
+          { name: 'タンバリン', file: '17.mp3' },
+          { name: 'コンガ', file: '18.mp3' }
+        ]
+      }
+    };
+
+    let currentCategoryKey = '';
+    const audioPlayer = document.getElementById('audio-player');
+
+    function selectCategory(key) {
+      currentCategoryKey = key;
+      const category = songData[key];
+
+      document.getElementById('step-category').classList.add('hidden');
+      document.getElementById('step-part').classList.remove('hidden');
+      document.getElementById('part-section-title').innerText = `2. ${category.title} - パートをえらぼう`;
+
+      const partGrid = document.getElementById('part-grid');
+      partGrid.innerHTML = '';
+
+      category.parts.forEach((part, index) => {
+        const card = document.createElement('div');
+        card.className = 'menu-card';
+        card.innerHTML = `<div class="card-title">${part.name}</div>`;
+        card.onclick = () => selectPart(index, card);
+        partGrid.appendChild(card);
+      });
+
+      document.getElementById('step-player').classList.add('hidden');
+      audioPlayer.pause();
+      audioPlayer.src = '';
+    }
+
+    function goBackToCategory() {
+      document.getElementById('step-category').classList.remove('hidden');
+      document.getElementById('step-part').classList.add('hidden');
+      document.getElementById('step-player').classList.add('hidden');
+      audioPlayer.pause();
+      audioPlayer.src = '';
+    }
+
+    function selectPart(index, cardElem) {
+      const part = songData[currentCategoryKey].parts[index];
+
+      const cards = document.querySelectorAll('#part-grid .menu-card');
+      cards.forEach(c => c.classList.remove('active'));
+      cardElem.classList.add('active');
+
+      document.getElementById('player-part-title').innerText = part.name;
+      document.getElementById('step-player').classList.remove('hidden');
+
+      // media/01.mp3 のような超シンプル指定
+      audioPlayer.src = 'media/' + part.file;
+      
+      resetSpeedButtons();
+      audioPlayer.playbackRate = 1.0;
+    }
+
+    function setSpeed(rate, btnElem) {
+      audioPlayer.playbackRate = rate;
+      resetSpeedButtons();
+      btnElem.classList.add('active');
+    }
+
+    function resetSpeedButtons() {
+      const btns = document.querySelectorAll('.speed-btn');
+      btns.forEach(b => b.classList.remove('active'));
+      if(!document.querySelector('.speed-btn.active')) {
+        btns[1].classList.add('active');
+      }
+    }
+  </script>
+</body>
+</html>
