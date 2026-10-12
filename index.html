@@ -13,14 +13,31 @@
       --text: #2D3748;
       --sub-text: #718096;
       --border: #E2E8F0;
+      --accent-bg: #FEFCBF;
+      --accent-border: #D69E2E;
+      --accent-text: #744210;
     }
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: var(--bg); color: var(--text); margin: 0; padding: 16px; display: flex; flex-direction: column; align-items: center; }
     .container { width: 100%; max-width: 500px; }
     
-    header { text-align: center; background: linear-gradient(135deg, #4299E1, #3182CE); color: white; padding: 20px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    header { text-align: center; background: linear-gradient(135deg, #4299E1, #3182CE); color: white; padding: 20px; border-radius: 16px; margin-bottom: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
     h1 { font-size: 1.4rem; margin: 0 0 6px 0; }
     .subtitle { font-size: 0.85rem; opacity: 0.9; margin: 0; }
+
+    /* 動画準備中のお知らせバナー */
+    .notice-card {
+      background-color: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      color: var(--accent-text);
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
 
     .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
     .back-btn { background: #EDF2F7; border: none; border-radius: 20px; padding: 8px 16px; font-size: 0.85rem; font-weight: bold; color: var(--text); cursor: pointer; }
@@ -39,10 +56,16 @@
 
     audio { width: 100%; margin-bottom: 16px; }
 
-    .speed-control { display: flex; flex-direction: column; align-items: center; gap: 8px; background: #F7FAFC; padding: 12px; border-radius: 12px; }
+    .speed-control { display: flex; flex-direction: column; align-items: center; gap: 10px; background: #F7FAFC; padding: 14px; border-radius: 12px; }
+    .speed-header { display: flex; justify-content: space-between; width: 100%; align-items: center; }
     .speed-label { font-size: 0.85rem; font-weight: bold; color: var(--sub-text); }
+    .speed-display { font-size: 1rem; font-weight: bold; color: var(--primary); }
+    
+    .slider-container { width: 100%; padding: 4px 0; }
+    .speed-slider { width: 100%; cursor: pointer; }
+    
     .speed-btns { display: flex; gap: 6px; width: 100%; justify-content: center; }
-    .speed-btn { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-size: 0.85rem; font-weight: bold; cursor: pointer; flex: 1; max-width: 70px; }
+    .speed-btn { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 0.8rem; font-weight: bold; cursor: pointer; flex: 1; max-width: 70px; }
     .speed-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 
     .hidden { display: none !important; }
@@ -55,6 +78,11 @@
       <h1>学習発表会 練習用音源</h1>
       <p class="subtitle">おうちでの練習に使ってね</p>
     </header>
+
+    <!-- メッセージバナー -->
+    <div class="notice-card">
+      📹 練習用動画は準備中だよ！<br>アップロードまでもう少し待ってね。
+    </div>
 
     <!-- STEP 1: 曲選択 -->
     <div id="step-category">
@@ -87,11 +115,20 @@
       <audio id="audio-player" controls preload="metadata"></audio>
 
       <div class="speed-control">
-        <span class="speed-label">さいせいスピード</span>
+        <div class="speed-header">
+          <span class="speed-label">さいせいスピード</span>
+          <span class="speed-display" id="speed-val">1.00倍</span>
+        </div>
+        
+        <div class="slider-container">
+          <input type="range" id="speed-range" class="speed-slider" min="0.5" max="1.25" step="0.05" value="1.0" oninput="onSliderChange(this.value)">
+        </div>
+
         <div class="speed-btns">
-          <button class="speed-btn" onclick="setSpeed(0.75, this)">0.75倍</button>
-          <button class="speed-btn active" onclick="setSpeed(1.0, this)">1.0倍</button>
-          <button class="speed-btn" onclick="setSpeed(1.25, this)">1.25倍</button>
+          <button class="speed-btn" onclick="setPresetSpeed(0.5, this)">0.5倍</button>
+          <button class="speed-btn" onclick="setPresetSpeed(0.75, this)">0.75倍</button>
+          <button class="speed-btn active" onclick="setPresetSpeed(1.0, this)">1.0倍</button>
+          <button class="speed-btn" onclick="setPresetSpeed(1.25, this)">1.25倍</button>
         </div>
       </div>
     </div>
@@ -174,25 +211,33 @@
       document.getElementById('player-part-title').innerText = part.name;
       document.getElementById('step-player').classList.remove('hidden');
 
-      // media/ を外し、同じ階層のファイルを直接読み込むように修正
       audioPlayer.src = './' + part.file;
       
-      resetSpeedButtons();
-      audioPlayer.playbackRate = 1.0;
+      updateSpeed(1.0);
     }
 
-    function setSpeed(rate, btnElem) {
+    function onSliderChange(val) {
+      updateSpeed(parseFloat(val));
+    }
+
+    function setPresetSpeed(rate, btnElem) {
+      updateSpeed(rate);
+    }
+
+    function updateSpeed(rate) {
       audioPlayer.playbackRate = rate;
-      resetSpeedButtons();
-      btnElem.classList.add('active');
-    }
+      document.getElementById('speed-val').innerText = rate.toFixed(2) + '倍';
+      document.getElementById('speed-range').value = rate;
 
-    function resetSpeedButtons() {
       const btns = document.querySelectorAll('.speed-btn');
-      btns.forEach(b => b.classList.remove('active'));
-      if(!document.querySelector('.speed-btn.active')) {
-        btns[1].classList.add('active');
-      }
+      btns.forEach(b => {
+        const btnRate = parseFloat(b.innerText);
+        if (Math.abs(btnRate - rate) < 0.01) {
+          b.classList.add('active');
+        } else {
+          b.classList.remove('active');
+        }
+      });
     }
   </script>
 </body>
