@@ -25,20 +25,6 @@
     h1 { font-size: 1.4rem; margin: 0 0 6px 0; }
     .subtitle { font-size: 0.85rem; opacity: 0.9; margin: 0; }
 
-    /* 動画準備中のお知らせバナー */
-    .notice-card {
-      background-color: var(--accent-bg);
-      border: 1px solid var(--accent-border);
-      color: var(--accent-text);
-      padding: 12px 16px;
-      border-radius: 12px;
-      font-size: 0.9rem;
-      font-weight: bold;
-      text-align: center;
-      margin-bottom: 20px;
-      line-height: 1.5;
-    }
-
     .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
     .back-btn { background: #EDF2F7; border: none; border-radius: 20px; padding: 8px 16px; font-size: 0.85rem; font-weight: bold; color: var(--text); cursor: pointer; }
     
@@ -53,6 +39,20 @@
 
     .player-card { background: var(--card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid var(--border); text-align: center; margin-top: 12px; }
     .part-title { font-size: 1.2rem; font-weight: bold; color: var(--primary); margin: 0 0 16px 0; }
+
+    /* パート個別の動画準備中バナー */
+    .notice-card {
+      background-color: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      color: var(--accent-text);
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 16px;
+      line-height: 1.4;
+    }
 
     audio { width: 100%; margin-bottom: 16px; }
 
@@ -78,11 +78,6 @@
       <h1>学習発表会 練習用音源</h1>
       <p class="subtitle">おうちでの練習に使ってね</p>
     </header>
-
-    <!-- メッセージバナー -->
-    <div class="notice-card">
-      📹 練習用動画は準備中だよ！<br>アップロードまでもう少し待ってね。
-    </div>
 
     <!-- STEP 1: 曲選択 -->
     <div id="step-category">
@@ -111,6 +106,11 @@
     <!-- STEP 3: プレイヤー -->
     <div id="step-player" class="player-card hidden">
       <h2 class="part-title" id="player-part-title">パート名</h2>
+
+      <!-- 動画準備中の特定パートのみ表示されるバナー -->
+      <div id="video-notice" class="notice-card hidden">
+        📹 演奏動画は準備中だよ！<br>アップロードまでもう少し待ってね。
+      </div>
       
       <audio id="audio-player" controls preload="metadata"></audio>
 
@@ -135,7 +135,18 @@
   </div>
 
   <script>
-    const songData = {
+    // 動画が準備中のパート一覧
+    var disabledVideoParts = [
+      'シロフォン',
+      'ヴィブラフォン',
+      'スネアドラム',
+      'バスドラム',
+      'ハイハット',
+      'タンバリン',
+      'コンガ'
+    ];
+
+    var songData = {
       gassho: {
         title: '全校合唱「大切なもの」',
         parts: [
@@ -166,25 +177,25 @@
       }
     };
 
-    let currentCategoryKey = '';
-    const audioPlayer = document.getElementById('audio-player');
+    var currentCategoryKey = '';
+    var audioPlayer = document.getElementById('audio-player');
 
     function selectCategory(key) {
       currentCategoryKey = key;
-      const category = songData[key];
+      var category = songData[key];
 
       document.getElementById('step-category').classList.add('hidden');
       document.getElementById('step-part').classList.remove('hidden');
-      document.getElementById('part-section-title').innerText = `2. ${category.title} - パートをえらぼう`;
+      document.getElementById('part-section-title').innerText = '2. ' + category.title + ' - パートをえらぼう';
 
-      const partGrid = document.getElementById('part-grid');
+      var partGrid = document.getElementById('part-grid');
       partGrid.innerHTML = '';
 
-      category.parts.forEach((part, index) => {
-        const card = document.createElement('div');
+      category.parts.forEach(function(part, index) {
+        var card = document.createElement('div');
         card.className = 'menu-card';
-        card.innerHTML = `<div class="card-title">${part.name}</div>`;
-        card.onclick = () => selectPart(index, card);
+        card.innerHTML = '<div class="card-title">' + part.name + '</div>';
+        card.onclick = function() { selectPart(index, card); };
         partGrid.appendChild(card);
       });
 
@@ -202,15 +213,22 @@
     }
 
     function selectPart(index, cardElem) {
-      const part = songData[currentCategoryKey].parts[index];
+      var part = songData[currentCategoryKey].parts[index];
 
-      const cards = document.querySelectorAll('#part-grid .menu-card');
-      cards.forEach(c => c.classList.remove('active'));
+      var cards = document.querySelectorAll('#part-grid .menu-card');
+      cards.forEach(function(c) { c.classList.remove('active'); });
       cardElem.classList.add('active');
 
       document.getElementById('player-part-title').innerText = part.name;
-      document.getElementById('step-player').classList.remove('hidden');
 
+      var videoNotice = document.getElementById('video-notice');
+      if (disabledVideoParts.indexOf(part.name) !== -1) {
+        videoNotice.classList.remove('hidden');
+      } else {
+        videoNotice.classList.add('hidden');
+      }
+
+      document.getElementById('step-player').classList.remove('hidden');
       audioPlayer.src = './' + part.file;
       
       updateSpeed(1.0);
@@ -229,9 +247,9 @@
       document.getElementById('speed-val').innerText = rate.toFixed(2) + '倍';
       document.getElementById('speed-range').value = rate;
 
-      const btns = document.querySelectorAll('.speed-btn');
-      btns.forEach(b => {
-        const btnRate = parseFloat(b.innerText);
+      var btns = document.querySelectorAll('.speed-btn');
+      btns.forEach(function(b) {
+        var btnRate = parseFloat(b.innerText);
         if (Math.abs(btnRate - rate) < 0.01) {
           b.classList.add('active');
         } else {
