@@ -13,9 +13,6 @@
       --text: #2D3748;
       --sub-text: #718096;
       --border: #E2E8F0;
-      --accent-bg: #FEFCBF;
-      --accent-border: #D69E2E;
-      --accent-text: #744210;
     }
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: var(--bg); color: var(--text); margin: 0; padding: 16px; display: flex; flex-direction: column; align-items: center; }
@@ -40,20 +37,7 @@
     .player-card { background: var(--card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid var(--border); text-align: center; margin-top: 12px; }
     .part-title { font-size: 1.2rem; font-weight: bold; color: var(--primary); margin: 0 0 16px 0; }
 
-    /* パート個別の動画準備中バナー */
-    .notice-card {
-      background-color: var(--accent-bg);
-      border: 1px solid var(--accent-border);
-      color: var(--accent-text);
-      padding: 10px 14px;
-      border-radius: 10px;
-      font-size: 0.85rem;
-      font-weight: bold;
-      text-align: center;
-      margin-bottom: 16px;
-      line-height: 1.4;
-    }
-
+    video { width: 100%; max-height: 280px; border-radius: 10px; background: #000; margin-bottom: 16px; }
     audio { width: 100%; margin-bottom: 16px; }
 
     .speed-control { display: flex; flex-direction: column; align-items: center; gap: 10px; background: #F7FAFC; padding: 14px; border-radius: 12px; }
@@ -106,13 +90,12 @@
     <!-- STEP 3: プレイヤー -->
     <div id="step-player" class="player-card hidden">
       <h2 class="part-title" id="player-part-title">パート名</h2>
-
-      <!-- 動画準備中の特定パートのみ表示されるバナー -->
-      <div id="video-notice" class="notice-card hidden">
-        📹 演奏動画は準備中だよ！<br>アップロードまでもう少し待ってね。
-      </div>
       
-      <audio id="audio-player" controls preload="metadata"></audio>
+      <!-- 動画用プレイヤー -->
+      <video id="video-player" controls preload="metadata" class="hidden"></video>
+
+      <!-- 音声用プレイヤー -->
+      <audio id="audio-player" controls preload="metadata" class="hidden"></audio>
 
       <div class="speed-control">
         <div class="speed-header">
@@ -135,50 +118,41 @@
   </div>
 
   <script>
-    // 動画が準備中のパート一覧
-    var disabledVideoParts = [
-      'シロフォン',
-      'ヴィブラフォン',
-      'スネアドラム',
-      'バスドラム',
-      'ハイハット',
-      'タンバリン',
-      'コンガ'
-    ];
-
     var songData = {
       gassho: {
         title: '全校合唱「大切なもの」',
         parts: [
-          { name: '範唱（ピアノ伴奏）', file: '01.mp3' },
-          { name: 'ピアノ伴奏', file: '02.mp3' },
-          { name: '上声部パート', file: '03.mp3' },
-          { name: '下声部パート', file: '04.mp3' }
+          { name: '範唱（ピアノ伴奏）', file: '01.mp3', type: 'audio' },
+          { name: 'ピアノ伴奏', file: '02.mp3', type: 'audio' },
+          { name: '上声部パート', file: '03.mp3', type: 'audio' },
+          { name: '下声部パート', file: '04.mp3', type: 'audio' }
         ]
       },
       gassou: {
         title: '器楽合奏「Five / 嵐」',
         parts: [
-          { name: '全体合奏', file: '05.mp3' },
-          { name: 'リコーダー１', file: '06.mp3' },
-          { name: 'リコーダー２', file: '07.mp3' },
-          { name: 'キーボード１', file: '08.mp3' },
-          { name: 'キーボード２', file: '09.mp3' },
-          { name: 'オルガン', file: '10.mp3' },
-          { name: 'ピアノ', file: '11.mp3' },
-          { name: 'シロフォン', file: '12.mp3' },
-          { name: 'ヴィブラフォン', file: '13.mp3' },
-          { name: 'スネアドラム', file: '14.mp3' },
-          { name: 'バスドラム', file: '15.mp3' },
-          { name: 'ハイハット', file: '16.mp3' },
-          { name: 'タンバリン', file: '17.mp3' },
-          { name: 'コンガ', file: '18.mp3' }
+          { name: '全体合奏', file: '05.mp3', type: 'audio' },
+          { name: 'リコーダー１', file: '06.mp3', type: 'audio' },
+          { name: 'リコーダー２', file: '07.mp3', type: 'audio' },
+          { name: 'キーボード１', file: '08.mp3', type: 'audio' },
+          { name: 'キーボード２', file: '09.mp3', type: 'audio' },
+          { name: 'オルガン', file: '10.mp3', type: 'audio' },
+          { name: 'ピアノ', file: '11.mp3', type: 'audio' },
+          { name: 'シロフォン', file: 'xylophone.mp4', type: 'video' },
+          { name: 'ヴィブラフォン', file: 'vibraphone.mp4', type: 'video' },
+          { name: 'スネアドラム', file: 'snare.mp4', type: 'video' },
+          { name: 'バスドラム', file: 'bassdrum.mp4', type: 'video' },
+          { name: 'ハイハット', file: 'hihat.mp4', type: 'video' },
+          { name: 'タンバリン', file: 'tambourine.mp4', type: 'video' },
+          { name: 'コンガ', file: 'conga.mp4', type: 'video' }
         ]
       }
     };
 
     var currentCategoryKey = '';
+    var activePlayer = null;
     var audioPlayer = document.getElementById('audio-player');
+    var videoPlayer = document.getElementById('video-player');
 
     function selectCategory(key) {
       currentCategoryKey = key;
@@ -200,16 +174,14 @@
       });
 
       document.getElementById('step-player').classList.add('hidden');
-      audioPlayer.pause();
-      audioPlayer.src = '';
+      stopPlayers();
     }
 
     function goBackToCategory() {
       document.getElementById('step-category').classList.remove('hidden');
       document.getElementById('step-part').classList.add('hidden');
       document.getElementById('step-player').classList.add('hidden');
-      audioPlayer.pause();
-      audioPlayer.src = '';
+      stopPlayers();
     }
 
     function selectPart(index, cardElem) {
@@ -220,18 +192,29 @@
       cardElem.classList.add('active');
 
       document.getElementById('player-part-title').innerText = part.name;
+      stopPlayers();
 
-      var videoNotice = document.getElementById('video-notice');
-      if (disabledVideoParts.indexOf(part.name) !== -1) {
-        videoNotice.classList.remove('hidden');
+      if (part.type === 'video') {
+        videoPlayer.src = './' + part.file;
+        videoPlayer.classList.remove('hidden');
+        audioPlayer.classList.add('hidden');
+        activePlayer = videoPlayer;
       } else {
-        videoNotice.classList.add('hidden');
+        audioPlayer.src = './' + part.file;
+        audioPlayer.classList.remove('hidden');
+        videoPlayer.classList.add('hidden');
+        activePlayer = audioPlayer;
       }
 
       document.getElementById('step-player').classList.remove('hidden');
-      audioPlayer.src = './' + part.file;
-      
       updateSpeed(1.0);
+    }
+
+    function stopPlayers() {
+      audioPlayer.pause();
+      audioPlayer.src = '';
+      videoPlayer.pause();
+      videoPlayer.src = '';
     }
 
     function onSliderChange(val) {
@@ -243,7 +226,9 @@
     }
 
     function updateSpeed(rate) {
-      audioPlayer.playbackRate = rate;
+      if (activePlayer) {
+        activePlayer.playbackRate = rate;
+      }
       document.getElementById('speed-val').innerText = rate.toFixed(2) + '倍';
       document.getElementById('speed-range').value = rate;
 
