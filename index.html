@@ -37,10 +37,11 @@
     .player-card { background: var(--card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid var(--border); text-align: center; margin-top: 12px; }
     .part-title { font-size: 1.2rem; font-weight: bold; color: var(--primary); margin: 0 0 16px 0; }
 
-    video { width: 100%; max-height: 280px; border-radius: 10px; background: #000; margin-bottom: 16px; }
-    audio { width: 100%; margin-bottom: 16px; }
+    .media-label { font-size: 0.85rem; font-weight: bold; color: var(--sub-text); text-align: left; margin: 10px 0 4px 0; }
+    video { width: 100%; max-height: 260px; border-radius: 10px; background: #000; margin-bottom: 10px; }
+    audio { width: 100%; margin-bottom: 10px; }
 
-    .speed-control { display: flex; flex-direction: column; align-items: center; gap: 10px; background: #F7FAFC; padding: 14px; border-radius: 12px; }
+    .speed-control { display: flex; flex-direction: column; align-items: center; gap: 10px; background: #F7FAFC; padding: 14px; border-radius: 12px; margin-top: 8px; }
     .speed-header { display: flex; justify-content: space-between; width: 100%; align-items: center; }
     .speed-label { font-size: 0.85rem; font-weight: bold; color: var(--sub-text); }
     .speed-display { font-size: 1rem; font-weight: bold; color: var(--primary); }
@@ -91,11 +92,17 @@
     <div id="step-player" class="player-card hidden">
       <h2 class="part-title" id="player-part-title">パート名</h2>
       
-      <!-- 動画用プレイヤー -->
-      <video id="video-player" controls preload="metadata" class="hidden"></video>
-
-      <!-- 音声用プレイヤー -->
-      <audio id="audio-player" controls preload="metadata" class="hidden"></audio>
+      <!-- 動画プレイヤー領域 -->
+      <div id="video-box" class="hidden">
+        <div class="media-label">📹 えんそうどうが</div>
+        <video id="video-player" controls preload="metadata"></video>
+      </div>
+      
+      <!-- 音声プレイヤー領域 -->
+      <div id="audio-box">
+        <div class="media-label" id="audio-label">🎵 れんしゅうおんげん</div>
+        <audio id="audio-player" controls preload="metadata"></audio>
+      </div>
 
       <div class="speed-control">
         <div class="speed-header">
@@ -122,35 +129,34 @@
       gassho: {
         title: '全校合唱「大切なもの」',
         parts: [
-          { name: '範唱（ピアノ伴奏）', file: '01.mp3', type: 'audio' },
-          { name: 'ピアノ伴奏', file: '02.mp3', type: 'audio' },
-          { name: '上声部パート', file: '03.mp3', type: 'audio' },
-          { name: '下声部パート', file: '04.mp3', type: 'audio' }
+          { name: '範唱（ピアノ伴奏）', audio: '01.mp3' },
+          { name: 'ピアノ伴奏', audio: '02.mp3' },
+          { name: '上声部パート', audio: '03.mp3' },
+          { name: '下声部パート', audio: '04.mp3' }
         ]
       },
       gassou: {
         title: '器楽合奏「Five / 嵐」',
         parts: [
-          { name: '全体合奏', file: '05.mp3', type: 'audio' },
-          { name: 'リコーダー１', file: '06.mp3', type: 'audio' },
-          { name: 'リコーダー２', file: '07.mp3', type: 'audio' },
-          { name: 'キーボード１', file: '08.mp3', type: 'audio' },
-          { name: 'キーボード２', file: '09.mp3', type: 'audio' },
-          { name: 'オルガン', file: '10.mp3', type: 'audio' },
-          { name: 'ピアノ', file: '11.mp3', type: 'audio' },
-          { name: 'シロフォン', file: 'xylophone.mp4', type: 'video' },
-          { name: 'ヴィブラフォン', file: 'vibraphone.mp4', type: 'video' },
-          { name: 'スネアドラム', file: 'snare.mp4', type: 'video' },
-          { name: 'バスドラム', file: 'bassdrum.mp4', type: 'video' },
-          { name: 'ハイハット', file: 'hihat.mp4', type: 'video' },
-          { name: 'タンバリン', file: 'tambourine.mp4', type: 'video' },
-          { name: 'コンガ', file: 'conga.mp4', type: 'video' }
+          { name: '全体合奏', audio: '05.mp3' },
+          { name: 'リコーダー１', audio: '06.mp3' },
+          { name: 'リコーダー２', audio: '07.mp3' },
+          { name: 'キーボード１', audio: '08.mp3' },
+          { name: 'キーボード２', audio: '09.mp3' },
+          { name: 'オルガン', audio: '10.mp3' },
+          { name: 'ピアノ', audio: '11.mp3' },
+          { name: 'シロフォン', audio: '12.mp3', video: 'xylophone.mp4' },
+          { name: 'ヴィブラフォン', audio: '13.mp3', video: 'vibraphone.mp4' },
+          { name: 'スネアドラム', audio: '14.mp3', video: 'snare.mp4' },
+          { name: 'バスドラム', audio: '15.mp3', video: 'bassdrum.mp4' },
+          { name: 'ハイハット', audio: '16.mp3', video: 'hihat.mp4' },
+          { name: 'タンバリン', audio: '17.mp3', video: 'tambourine.mp4' },
+          { name: 'コンガ', audio: '18.mp3', video: 'conga.mp4' }
         ]
       }
     };
 
     var currentCategoryKey = '';
-    var activePlayer = null;
     var audioPlayer = document.getElementById('audio-player');
     var videoPlayer = document.getElementById('video-player');
 
@@ -194,16 +200,20 @@
       document.getElementById('player-part-title').innerText = part.name;
       stopPlayers();
 
-      if (part.type === 'video') {
-        videoPlayer.src = './' + part.file;
-        videoPlayer.classList.remove('hidden');
-        audioPlayer.classList.add('hidden');
-        activePlayer = videoPlayer;
+      // 音声読み込み
+      if (part.audio) {
+        audioPlayer.src = './' + part.audio;
+        document.getElementById('audio-box').classList.remove('hidden');
       } else {
-        audioPlayer.src = './' + part.file;
-        audioPlayer.classList.remove('hidden');
-        videoPlayer.classList.add('hidden');
-        activePlayer = audioPlayer;
+        document.getElementById('audio-box').classList.add('hidden');
+      }
+
+      // 動画読み込み（ある場合）
+      if (part.video) {
+        videoPlayer.src = './' + part.video;
+        document.getElementById('video-box').classList.remove('hidden');
+      } else {
+        document.getElementById('video-box').classList.add('hidden');
       }
 
       document.getElementById('step-player').classList.remove('hidden');
@@ -226,9 +236,8 @@
     }
 
     function updateSpeed(rate) {
-      if (activePlayer) {
-        activePlayer.playbackRate = rate;
-      }
+      audioPlayer.playbackRate = rate;
+      videoPlayer.playbackRate = rate;
       document.getElementById('speed-val').innerText = rate.toFixed(2) + '倍';
       document.getElementById('speed-range').value = rate;
 
