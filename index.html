@@ -138,7 +138,7 @@
     var songData = {
       gassho: {
         title: '全校合唱「大切なもの」',
-        enableCount: false, // カウントなし
+        enableCount: false,
         parts: [
           { name: '範唱（ピアノ伴奏）', audio: '01.mp3' },
           { name: 'ピアノ伴奏', audio: '02.mp3' },
@@ -148,8 +148,8 @@
       },
       gassou: {
         title: '器楽合奏「Five / 嵐」',
-        enableCount: true,  // カウントあり
-        bpm: 108,           // テンポ 108
+        enableCount: true,
+        bpm: 108,
         parts: [
           { name: '全体合奏', audio: '05.mp3' },
           { name: 'リコーダー１', audio: '06.mp3' },
@@ -175,6 +175,7 @@
     var videoPlayer = document.getElementById('video-player');
 
     var isCounting = false;
+    var countFinished = false;
     var countTimer = null;
     var audioCtx = null;
 
@@ -207,18 +208,30 @@
       playerElem.onplay = function(e) {
         var category = songData[currentCategoryKey];
 
-        if (!category.enableCount || isCounting) return;
+        if (!category.enableCount || countFinished) {
+          return;
+        }
 
-        if (playerElem.currentTime > 0.3) return;
+        if (isCounting) {
+          return;
+        }
 
-        e.preventDefault();
-        playerElem.pause();
-        playerElem.currentTime = 0;
+        if (playerElem.currentTime < 0.3) {
+          playerElem.pause();
+          playerElem.currentTime = 0;
 
-        startCountDown(function() {
-          isCounting = false;
-          playerElem.play();
-        });
+          startCountDown(function() {
+            countFinished = true;
+            isCounting = false;
+            playerElem.play();
+          });
+        }
+      };
+
+      playerElem.onseeked = function() {
+        if (playerElem.currentTime === 0) {
+          countFinished = false;
+        }
       };
     }
 
@@ -242,6 +255,7 @@
           playRimshotSound(false);
         } else {
           clearInterval(countTimer);
+          countTimer = null;
           banner.classList.add('hidden');
           onComplete();
         }
@@ -309,8 +323,12 @@
     }
 
     function stopPlayers() {
-      if (countTimer) clearInterval(countTimer);
+      if (countTimer) {
+        clearInterval(countTimer);
+        countTimer = null;
+      }
       isCounting = false;
+      countFinished = false;
       document.getElementById('count-banner').classList.add('hidden');
 
       audioPlayer.pause();
