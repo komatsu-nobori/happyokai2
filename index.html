@@ -37,13 +37,15 @@
     .player-card { background: var(--card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid var(--border); text-align: center; margin-top: 12px; }
     .part-title { font-size: 1.2rem; font-weight: bold; color: var(--primary); margin: 0 0 16px 0; }
 
+    /* カウント専用ボタン＆バナー */
+    .count-start-btn { width: 100%; background: #48BB78; color: white; border: none; border-radius: 10px; padding: 12px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .count-start-btn:active { background: #38A169; }
+    .count-display { background: #EBF8FF; border: 1px solid #90CDF4; border-radius: 8px; padding: 8px; margin-bottom: 12px; font-weight: bold; color: #2B6CB0; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .count-badge { background: #3182CE; color: white; border-radius: 50%; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.9rem; }
+
     .media-label { font-size: 0.85rem; font-weight: bold; color: var(--sub-text); text-align: left; margin: 10px 0 4px 0; }
     video { width: 100%; max-height: 260px; border-radius: 10px; background: #000; margin-bottom: 10px; }
     audio { width: 100%; margin-bottom: 10px; }
-
-    /* カウント表示 */
-    .count-display { background: #EBF8FF; border: 1px solid #90CDF4; border-radius: 8px; padding: 8px; margin-bottom: 12px; font-weight: bold; color: #2B6CB0; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px; }
-    .count-badge { background: #3182CE; color: white; border-radius: 50%; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.9rem; }
 
     .speed-control { display: flex; flex-direction: column; align-items: center; gap: 10px; background: #F7FAFC; padding: 14px; border-radius: 12px; margin-top: 8px; }
     .speed-header { display: flex; justify-content: space-between; width: 100%; align-items: center; }
@@ -96,6 +98,11 @@
     <div id="step-player" class="player-card hidden">
       <h2 class="part-title" id="player-part-title">パート名</h2>
       
+      <!-- 器楽合奏用の4カウント再生ボタン -->
+      <button id="count-start-btn" class="count-start-btn hidden" onclick="startCountAndPlay()">
+        ▶ 4カウントでさいせい開始
+      </button>
+
       <!-- カウント表示バナー -->
       <div id="count-banner" class="count-display hidden">
         <span>カウント中:</span>
@@ -175,7 +182,6 @@
     var videoPlayer = document.getElementById('video-player');
 
     var isCounting = false;
-    var countFinished = false;
     var countTimer = null;
     var audioCtx = null;
 
@@ -204,38 +210,14 @@
       osc.stop(audioCtx.currentTime + 0.04);
     }
 
-    function setupPlayerWithCount(playerElem) {
-      playerElem.onplay = function(e) {
-        var category = songData[currentCategoryKey];
+    function startCountAndPlay() {
+      if (isCounting) return;
 
-        if (!category.enableCount || countFinished) {
-          return;
-        }
+      audioPlayer.pause();
+      audioPlayer.currentTime = 0;
+      videoPlayer.pause();
+      videoPlayer.currentTime = 0;
 
-        if (isCounting) {
-          return;
-        }
-
-        if (playerElem.currentTime < 0.3) {
-          playerElem.pause();
-          playerElem.currentTime = 0;
-
-          startCountDown(function() {
-            countFinished = true;
-            isCounting = false;
-            playerElem.play();
-          });
-        }
-      };
-
-      playerElem.onseeked = function() {
-        if (playerElem.currentTime === 0) {
-          countFinished = false;
-        }
-      };
-    }
-
-    function startCountDown(onComplete) {
       isCounting = true;
       var bpm = songData[currentCategoryKey].bpm || 108;
       var interval = (60 / (bpm * currentRate)) * 1000;
@@ -243,7 +225,9 @@
       var countNum = 1;
       var banner = document.getElementById('count-banner');
       var numElem = document.getElementById('count-num');
+      var btn = document.getElementById('count-start-btn');
 
+      btn.classList.add('hidden');
       banner.classList.remove('hidden');
       numElem.innerText = countNum;
       playRimshotSound(true);
@@ -256,11 +240,18 @@
         } else {
           clearInterval(countTimer);
           countTimer = null;
+          isCounting = false;
           banner.classList.add('hidden');
-          onComplete();
+          btn.classList.remove('hidden');
+
+          var part = songData[currentCategoryKey].parts[currentPartIndex];
+          if (part.audio) audioPlayer.play();
+          if (part.video) videoPlayer.play();
         }
       }, interval);
     }
+
+    var currentPartIndex = 0;
 
     function selectCategory(key) {
       currentCategoryKey = key;
@@ -293,7 +284,9 @@
     }
 
     function selectPart(index, cardElem) {
-      var part = songData[currentCategoryKey].parts[index];
+      currentPartIndex = index;
+      var category = songData[currentCategoryKey];
+      var part = category.parts[index];
 
       var cards = document.querySelectorAll('#part-grid .menu-card');
       cards.forEach(function(c) { c.classList.remove('active'); });
@@ -302,10 +295,16 @@
       document.getElementById('player-part-title').innerText = part.name;
       stopPlayers();
 
+      var countBtn = document.getElementById('count-start-btn');
+      if (category.enableCount) {
+        countBtn.classList.remove('hidden');
+      } else {
+        countBtn.classList.add('hidden');
+      }
+
       if (part.audio) {
         audioPlayer.src = './' + part.audio;
         document.getElementById('audio-box').classList.remove('hidden');
-        setupPlayerWithCount(audioPlayer);
       } else {
         document.getElementById('audio-box').classList.add('hidden');
       }
@@ -313,7 +312,6 @@
       if (part.video) {
         videoPlayer.src = './' + part.video;
         document.getElementById('video-box').classList.remove('hidden');
-        setupPlayerWithCount(videoPlayer);
       } else {
         document.getElementById('video-box').classList.add('hidden');
       }
@@ -328,7 +326,6 @@
         countTimer = null;
       }
       isCounting = false;
-      countFinished = false;
       document.getElementById('count-banner').classList.add('hidden');
 
       audioPlayer.pause();
