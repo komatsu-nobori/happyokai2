@@ -41,6 +41,10 @@
     video { width: 100%; max-height: 260px; border-radius: 10px; background: #000; margin-bottom: 10px; }
     audio { width: 100%; margin-bottom: 10px; }
 
+    /* カウント表示 */
+    .count-display { background: #EBF8FF; border: 1px solid #90CDF4; border-radius: 8px; padding: 8px; margin-bottom: 12px; font-weight: bold; color: #2B6CB0; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .count-badge { background: #3182CE; color: white; border-radius: 50%; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.9rem; }
+
     .speed-control { display: flex; flex-direction: column; align-items: center; gap: 10px; background: #F7FAFC; padding: 14px; border-radius: 12px; margin-top: 8px; }
     .speed-header { display: flex; justify-content: space-between; width: 100%; align-items: center; }
     .speed-label { font-size: 0.85rem; font-weight: bold; color: var(--sub-text); }
@@ -92,6 +96,12 @@
     <div id="step-player" class="player-card hidden">
       <h2 class="part-title" id="player-part-title">パート名</h2>
       
+      <!-- カウント表示バナー -->
+      <div id="count-banner" class="count-display hidden">
+        <span>カウント中:</span>
+        <span class="count-badge" id="count-num">1</span>
+      </div>
+
       <!-- 動画プレイヤー領域 -->
       <div id="video-box" class="hidden">
         <div class="media-label">📹 えんそうどうが</div>
@@ -128,6 +138,7 @@
     var songData = {
       gassho: {
         title: '全校合唱「大切なもの」',
+        enableCount: false, // カウントなし
         parts: [
           { name: '範唱（ピアノ伴奏）', audio: '01.mp3' },
           { name: 'ピアノ伴奏', audio: '02.mp3' },
@@ -137,6 +148,8 @@
       },
       gassou: {
         title: '器楽合奏「Five / 嵐」',
+        enableCount: true,  // カウントあり
+        bpm: 108,           // テンポ 108
         parts: [
           { name: '全体合奏', audio: '05.mp3' },
           { name: 'リコーダー１', audio: '06.mp3' },
@@ -157,8 +170,83 @@
     };
 
     var currentCategoryKey = '';
+    var currentRate = 1.0;
     var audioPlayer = document.getElementById('audio-player');
     var videoPlayer = document.getElementById('video-player');
+
+    var isCounting = false;
+    var countTimer = null;
+    var audioCtx = null;
+
+    function playRimshotSound(isAccent) {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(isAccent ? 1200 : 800, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.04);
+
+      gain.gain.setValueAtTime(0.8, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.04);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.04);
+    }
+
+    function setupPlayerWithCount(playerElem) {
+      playerElem.onplay = function(e) {
+        var category = songData[currentCategoryKey];
+
+        if (!category.enableCount || isCounting) return;
+
+        if (playerElem.currentTime > 0.3) return;
+
+        e.preventDefault();
+        playerElem.pause();
+        playerElem.currentTime = 0;
+
+        startCountDown(function() {
+          isCounting = false;
+          playerElem.play();
+        });
+      };
+    }
+
+    function startCountDown(onComplete) {
+      isCounting = true;
+      var bpm = songData[currentCategoryKey].bpm || 108;
+      var interval = (60 / (bpm * currentRate)) * 1000;
+
+      var countNum = 1;
+      var banner = document.getElementById('count-banner');
+      var numElem = document.getElementById('count-num');
+
+      banner.classList.remove('hidden');
+      numElem.innerText = countNum;
+      playRimshotSound(true);
+
+      countTimer = setInterval(function() {
+        countNum++;
+        if (countNum <= 4) {
+          numElem.innerText = countNum;
+          playRimshotSound(false);
+        } else {
+          clearInterval(countTimer);
+          banner.classList.add('hidden');
+          onComplete();
+        }
+      }, interval);
+    }
 
     function selectCategory(key) {
       currentCategoryKey = key;
@@ -200,18 +288,18 @@
       document.getElementById('player-part-title').innerText = part.name;
       stopPlayers();
 
-      // 音声読み込み
       if (part.audio) {
         audioPlayer.src = './' + part.audio;
         document.getElementById('audio-box').classList.remove('hidden');
+        setupPlayerWithCount(audioPlayer);
       } else {
         document.getElementById('audio-box').classList.add('hidden');
       }
 
-      // 動画読み込み（ある場合）
       if (part.video) {
         videoPlayer.src = './' + part.video;
         document.getElementById('video-box').classList.remove('hidden');
+        setupPlayerWithCount(videoPlayer);
       } else {
         document.getElementById('video-box').classList.add('hidden');
       }
@@ -221,6 +309,10 @@
     }
 
     function stopPlayers() {
+      if (countTimer) clearInterval(countTimer);
+      isCounting = false;
+      document.getElementById('count-banner').classList.add('hidden');
+
       audioPlayer.pause();
       audioPlayer.src = '';
       videoPlayer.pause();
@@ -236,6 +328,7 @@
     }
 
     function updateSpeed(rate) {
+      currentRate = rate;
       audioPlayer.playbackRate = rate;
       videoPlayer.playbackRate = rate;
       document.getElementById('speed-val').innerText = rate.toFixed(2) + '倍';
